@@ -1,0 +1,1007 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: ""
+Resources:
+  EC2Instance:
+    Type: "AWS::EC2::Instance"
+    Properties:
+      ImageId: "ami-0e34ec67298a7ea81"
+      InstanceType: "t2.micro"
+      KeyName: "PrivateEC2s"
+      AvailabilityZone: !GetAtt EC2Instance3.AvailabilityZone
+      Tenancy: "default"
+      SubnetId: !Ref EC2Subnet3
+      EbsOptimized: false
+      SecurityGroupIds:
+        - !Ref EC2SecurityGroup4
+        - !Ref EC2SecurityGroup
+      SourceDestCheck: true
+      BlockDeviceMappings:
+        - DeviceName: "/dev/xvda"
+          Ebs:
+            Encrypted: false
+            VolumeSize: 8
+            SnapshotId: "snap-03cf69f68a0be6c3c"
+            VolumeType: "gp3"
+            DeleteOnTermination: true
+      Tags:
+        - Key: "Name"
+          Value: "PrivateWebServer"
+      HibernationOptions:
+        Configured: false
+      EnclaveOptions:
+        Enabled: false
+
+  EC2Instance2:
+    Type: "AWS::EC2::Instance"
+    Properties:
+      ImageId: "ami-004e735215a3d52e7"
+      InstanceType: "t2.micro"
+      KeyName: "PrivateEC2s"
+      AvailabilityZone: !GetAtt EC2Subnet2.AvailabilityZone
+      Tenancy: "default"
+      SubnetId: !Ref EC2Subnet2
+      EbsOptimized: false
+      SecurityGroupIds:
+        - !Ref EC2SecurityGroup
+      SourceDestCheck: true
+      BlockDeviceMappings:
+        - DeviceName: "/dev/xvda"
+          Ebs:
+            Encrypted: false
+            VolumeSize: 8
+            SnapshotId: "snap-07a3b65c645b9a8a9"
+            VolumeType: "gp3"
+            DeleteOnTermination: true
+      Tags:
+        - Key: "Name"
+          Value: "PrivateWebServer3"
+      HibernationOptions:
+        Configured: false
+      EnclaveOptions:
+        Enabled: false
+
+  EC2Instance3:
+    Type: "AWS::EC2::Instance"
+    Properties:
+      ImageId: "ami-06e4ca05d431835e9"
+      InstanceType: "t2.micro"
+      KeyName: "BastonHost"
+      AvailabilityZone: !GetAtt EC2Subnet.AvailabilityZone
+      Tenancy: "default"
+      SubnetId: !Ref EC2Subnet
+      EbsOptimized: false
+      SecurityGroupIds:
+        - !Ref EC2SecurityGroup3
+      SourceDestCheck: true
+      BlockDeviceMappings:
+        - DeviceName: "/dev/xvda"
+          Ebs:
+            Encrypted: false
+            VolumeSize: 8
+            SnapshotId: "snap-0ae2de1ca0c0ec90d"
+            VolumeType: "gp3"
+            DeleteOnTermination: true
+      Tags:
+        - Key: "Name"
+          Value: "BastionHost"
+      HibernationOptions:
+        Configured: false
+      EnclaveOptions:
+        Enabled: false
+
+  EC2VPC:
+    Type: "AWS::EC2::VPC"
+    Properties:
+      CidrBlock: "10.0.0.0/16"
+      EnableDnsSupport: true
+      EnableDnsHostnames: false
+      InstanceTenancy: "default"
+      Tags:
+        - Key: "Name"
+          Value: "vpc-main"
+
+  EC2Subnet:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !GetAtt EC2Subnet3.AvailabilityZone
+      CidrBlock: "10.0.1.0/24"
+      VpcId: !Ref EC2VPC
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: "Name"
+          Value: "PubSub1"
+
+  EC2Subnet2:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !GetAtt EC2Subnet4.AvailabilityZone
+      CidrBlock: "10.0.4.0/24"
+      VpcId: !Ref EC2VPC
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: "Name"
+          Value: "PriSub2"
+
+  EC2Subnet3:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Sub "${AWS::Region}a"
+      CidrBlock: "10.0.3.0/24"
+      VpcId: !Ref EC2VPC
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: "Name"
+          Value: "PriSub"
+
+  EC2Subnet4:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Sub "${AWS::Region}c"
+      CidrBlock: "10.0.2.0/24"
+      VpcId: !Ref EC2VPC
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: "Name"
+          Value: "PubSub2"
+
+  EC2InternetGateway:
+    Type: "AWS::EC2::InternetGateway"
+    Properties:
+      Tags:
+        - Key: "Name"
+          Value: "igw-Main"
+
+  EC2EIP:
+    Type: "AWS::EC2::EIP"
+    Properties:
+      Domain: "vpc"
+
+  EC2RouteTable:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref EC2VPC
+      Tags:
+        - Key: "Name"
+          Value: "nat-routes"
+
+  EC2RouteTable2:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref EC2VPC
+      Tags:
+        - Key: "Name"
+          Value: "PubRT"
+
+  EC2Route:
+    Type: "AWS::EC2::Route"
+    Properties:
+      DestinationCidrBlock: "0.0.0.0/0"
+      NatGatewayId: !Ref EC2NatGateway
+      RouteTableId: !Ref EC2RouteTable
+
+  EC2Route2:
+    Type: "AWS::EC2::Route"
+    Properties:
+      DestinationCidrBlock: "0.0.0.0/0"
+      GatewayId: !Ref EC2InternetGateway
+      RouteTableId: !Ref EC2RouteTable2
+
+  EC2NatGateway:
+    Type: "AWS::EC2::NatGateway"
+    Properties:
+      SubnetId: !Ref EC2Subnet
+      Tags:
+        - Key: "Name"
+          Value: "nat-Main"
+      AllocationId: !GetAtt EC2EIP.AllocationId
+
+  EC2SubnetRouteTableAssociation:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref EC2RouteTable
+      SubnetId: !Ref EC2Subnet3
+
+  EC2SubnetRouteTableAssociation2:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref EC2RouteTable
+      SubnetId: !Ref EC2Subnet2
+
+  EC2SubnetRouteTableAssociation3:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref EC2RouteTable2
+      SubnetId: !Ref EC2Subnet
+
+  EC2SubnetRouteTableAssociation4:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref EC2RouteTable2
+      SubnetId: !Ref EC2Subnet4
+
+  ElasticLoadBalancingV2LoadBalancer:
+    Type: "AWS::ElasticLoadBalancingV2::LoadBalancer"
+    Properties:
+      Name: "ALB-main"
+      Scheme: "internet-facing"
+      Type: "application"
+      Subnets:
+        - !Ref EC2Subnet4
+        - !Ref EC2Subnet
+      SecurityGroups:
+        - !Ref EC2SecurityGroup2
+      IpAddressType: "ipv4"
+      LoadBalancerAttributes:
+        - Key: "access_logs.s3.enabled"
+          Value: "false"
+        - Key: "idle_timeout.timeout_seconds"
+          Value: "60"
+        - Key: "deletion_protection.enabled"
+          Value: "false"
+        - Key: "routing.http2.enabled"
+          Value: "true"
+        - Key: "routing.http.drop_invalid_header_fields.enabled"
+          Value: "false"
+        - Key: "routing.http.xff_client_port.enabled"
+          Value: "false"
+        - Key: "routing.http.preserve_host_header.enabled"
+          Value: "false"
+        - Key: "routing.http.xff_header_processing.mode"
+          Value: "append"
+        - Key: "load_balancing.cross_zone.enabled"
+          Value: "true"
+        - Key: "routing.http.desync_mitigation_mode"
+          Value: "defensive"
+        - Key: "waf.fail_open.enabled"
+          Value: "false"
+        - Key: "routing.http.x_amzn_tls_version_and_cipher_suite.enabled"
+          Value: "false"
+        - Key: "connection_logs.s3.enabled"
+          Value: "false"
+
+  ElasticLoadBalancingV2Listener:
+    Type: "AWS::ElasticLoadBalancingV2::Listener"
+    Properties:
+      LoadBalancerArn: !Ref ElasticLoadBalancingV2LoadBalancer
+      Port: 8080
+      Protocol: "HTTP"
+      DefaultActions:
+        - Order: 1
+          TargetGroupArn: !Ref ElasticLoadBalancingV2TargetGroup
+          Type: "forward"
+
+  ElasticLoadBalancingV2Listener2:
+    Type: "AWS::ElasticLoadBalancingV2::Listener"
+    Properties:
+      LoadBalancerArn: !Ref ElasticLoadBalancingV2LoadBalancer
+      Port: 80
+      Protocol: "HTTP"
+      DefaultActions:
+        - TargetGroupArn: !Ref ElasticLoadBalancingV2TargetGroup
+          Type: "forward"
+
+  EC2SecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: "launch-wizard-1 created 2023-11-16T15:45:17.805Z"
+      GroupName: "PrivateSG"
+      VpcId: !Ref EC2VPC
+      SecurityGroupIngress:
+        - SourceSecurityGroupId: !Sub "${ElasticLoadBalancingV2LoadBalancer.SecurityGroups}"
+          SourceSecurityGroupOwnerId: !Ref AWS::AccountId
+          Description: "Allow traffix from LB"
+          FromPort: 80
+          IpProtocol: "tcp"
+          ToPort: 80
+        - SourceSecurityGroupId: !Sub "${ElasticLoadBalancingV2LoadBalancer.SecurityGroups}"
+          SourceSecurityGroupOwnerId: !Ref AWS::AccountId
+          Description: "Port 8080 for app"
+          FromPort: 8080
+          IpProtocol: "tcp"
+          ToPort: 8080
+        - SourceSecurityGroupId: !Ref EC2SecurityGroup3
+          SourceSecurityGroupOwnerId: !Ref AWS::AccountId
+          Description: "Port 8080 for bastion to test"
+          FromPort: 8080
+          IpProtocol: "tcp"
+          ToPort: 8080
+        - CidrIp: "0.0.0.0/0"
+          Description: "SSH anywhere"
+          FromPort: 22
+          IpProtocol: "tcp"
+          ToPort: 22
+        - SourceSecurityGroupId: !Ref EC2SecurityGroup3
+          SourceSecurityGroupOwnerId: !Ref AWS::AccountId
+          Description: "Allow bastion host"
+          FromPort: 22
+          IpProtocol: "tcp"
+          ToPort: 22
+      SecurityGroupEgress:
+        - CidrIp: "0.0.0.0/0"
+          IpProtocol: "-1"
+        - DestinationSecurityGroupId: !Ref EC2SecurityGroup6
+          Description: "Allow outbound traffic to rds"
+          FromPort: !GetAtt RDSDBInstance.Endpoint.Port
+          IpProtocol: "tcp"
+          ToPort: !GetAtt RDSDBInstance.Endpoint.Port
+
+  EC2SecurityGroup2:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: "alb"
+      GroupName: "ALB-SG"
+      VpcId: !Ref EC2VPC
+      SecurityGroupIngress:
+        - CidrIp: "0.0.0.0/0"
+          FromPort: 80
+          IpProtocol: "tcp"
+          ToPort: 80
+        - CidrIpv6: "::/0"
+          FromPort: 80
+          IpProtocol: "tcp"
+          ToPort: 80
+        - CidrIp: "0.0.0.0/0"
+          FromPort: 8080
+          IpProtocol: "tcp"
+          ToPort: 8080
+      SecurityGroupEgress:
+        - CidrIp: "0.0.0.0/0"
+          IpProtocol: "-1"
+
+  EC2SecurityGroup3:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: "Allow SSH"
+      GroupName: "BastionHost"
+      VpcId: !Ref EC2VPC
+      SecurityGroupIngress:
+        - CidrIp: "0.0.0.0/0"
+          FromPort: 22
+          IpProtocol: "tcp"
+          ToPort: 22
+      SecurityGroupEgress:
+        - CidrIp: "0.0.0.0/0"
+          IpProtocol: "-1"
+
+  EC2SecurityGroup4:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: !Sub "Security group attached to instances to securely connect to ${RDSDBInstance}. Modification could lead to connection loss."
+      GroupName: "ec2-rds-1"
+      VpcId: !Ref EC2VPC
+      SecurityGroupEgress:
+        - DestinationSecurityGroupId: !Ref EC2SecurityGroup7
+          Description: !Sub "Rule to allow connections to ${RDSDBInstance} from any instances this security group is attached to"
+          FromPort: !GetAtt RDSDBInstance.Endpoint.Port
+          IpProtocol: "tcp"
+          ToPort: !GetAtt RDSDBInstance.Endpoint.Port
+
+  EC2SecurityGroup5:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: "Allw ssh from anywhere"
+      GroupName: "BastionSG"
+      VpcId: "vpc-06c47958f6a91e2f7"
+      SecurityGroupIngress:
+        - CidrIp: "0.0.0.0/0"
+          Description: "HTTP from all"
+          FromPort: 80
+          IpProtocol: "tcp"
+          ToPort: 80
+        - CidrIp: "0.0.0.0/0"
+          Description: "Open 8080"
+          FromPort: 8080
+          IpProtocol: "tcp"
+          ToPort: 8080
+        - CidrIp: "0.0.0.0/0"
+          Description: "Allow SHH"
+          FromPort: 22
+          IpProtocol: "tcp"
+          ToPort: 22
+      SecurityGroupEgress:
+        - CidrIp: "0.0.0.0/0"
+          IpProtocol: "-1"
+
+  EC2SecurityGroup6:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: "Created by RDS management console"
+      GroupName: "RDS-sg"
+      VpcId: !Ref EC2VPC
+      SecurityGroupIngress:
+        - CidrIp: "41.250.211.242/32"
+          FromPort: !GetAtt RDSDBInstance.Endpoint.Port
+          IpProtocol: "tcp"
+          ToPort: !GetAtt RDSDBInstance.Endpoint.Port
+        - SourceSecurityGroupId: !Ref EC2SecurityGroup3
+          SourceSecurityGroupOwnerId: !Ref AWS::AccountId
+          Description: "Allow bastion host to db instance"
+          FromPort: !GetAtt RDSDBInstance.Endpoint.Port
+          IpProtocol: "tcp"
+          ToPort: !GetAtt RDSDBInstance.Endpoint.Port
+        - SourceSecurityGroupId: "sg-0cdfbd5faee4acb4b"
+          SourceSecurityGroupOwnerId: !Ref AWS::AccountId
+          Description: "Allow inbound from private EC2"
+          FromPort: !GetAtt RDSDBInstance.Endpoint.Port
+          IpProtocol: "tcp"
+          ToPort: !GetAtt RDSDBInstance.Endpoint.Port
+      SecurityGroupEgress:
+        - CidrIp: "0.0.0.0/0"
+          IpProtocol: "-1"
+
+  EC2SecurityGroup7:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: !Sub "Security group attached to ${RDSDBInstance} to allow EC2 instances with specific security groups attached to connect to the database. Modification could lead to connection loss."
+      GroupName: "rds-ec2-1"
+      VpcId: !Ref EC2VPC
+      SecurityGroupIngress:
+        - SourceSecurityGroupId: "sg-076c58a8fec3b3d81"
+          SourceSecurityGroupOwnerId: !Ref AWS::AccountId
+          Description: "Rule to allow connections from EC2 instances with sg-076c58a8fec3b3d81 attached"
+          FromPort: !GetAtt RDSDBInstance.Endpoint.Port
+          IpProtocol: "tcp"
+          ToPort: !GetAtt RDSDBInstance.Endpoint.Port
+
+  ElasticLoadBalancingV2TargetGroup:
+    Type: "AWS::ElasticLoadBalancingV2::TargetGroup"
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckPath: "/"
+      Port: 80
+      Protocol: "HTTP"
+      HealthCheckPort: "traffic-port"
+      HealthCheckProtocol: "HTTP"
+      HealthCheckTimeoutSeconds: 5
+      UnhealthyThresholdCount: 2
+      TargetType: "instance"
+      Matcher:
+        HttpCode: "200"
+      HealthyThresholdCount: 5
+      VpcId: !Ref EC2VPC
+      Name: "TG"
+      HealthCheckEnabled: true
+      TargetGroupAttributes:
+        - Key: "target_group_health.unhealthy_state_routing.minimum_healthy_targets.percentage"
+          Value: "off"
+        - Key: "deregistration_delay.timeout_seconds"
+          Value: "300"
+        - Key: "stickiness.type"
+          Value: "lb_cookie"
+        - Key: "stickiness.lb_cookie.duration_seconds"
+          Value: "86400"
+        - Key: "slow_start.duration_seconds"
+          Value: "0"
+        - Key: "stickiness.app_cookie.duration_seconds"
+          Value: "86400"
+        - Key: "target_group_health.dns_failover.minimum_healthy_targets.percentage"
+          Value: "off"
+        - Key: "load_balancing.cross_zone.enabled"
+          Value: "use_load_balancer_configuration"
+        - Key: "load_balancing.algorithm.type"
+          Value: "round_robin"
+        - Key: "target_group_health.unhealthy_state_routing.minimum_healthy_targets.count"
+          Value: "1"
+        - Key: "stickiness.enabled"
+          Value: "false"
+        - Key: "target_group_health.dns_failover.minimum_healthy_targets.count"
+          Value: "1"
+        - Key: "load_balancing.algorithm.anomaly_mitigation"
+          Value: "off"
+        - Key: "stickiness.app_cookie.cookie_name"
+          Value: ""
+      Targets:
+        - Id: !Ref EC2Instance
+          Port: 8080
+        - Id: !Ref EC2Instance2
+          Port: 8080
+
+  EC2Volume:
+    Type: "AWS::EC2::Volume"
+    Properties:
+      AvailabilityZone: !GetAtt EC2Instance2.AvailabilityZone
+      Encrypted: false
+      Size: 8
+      VolumeType: "gp3"
+      SnapshotId: "snap-07a3b65c645b9a8a9"
+      MultiAttachEnabled: false
+
+  EC2Volume2:
+    Type: "AWS::EC2::Volume"
+    Properties:
+      AvailabilityZone: !GetAtt EC2Instance.AvailabilityZone
+      Encrypted: false
+      Size: 8
+      VolumeType: "gp3"
+      SnapshotId: "snap-0ae2de1ca0c0ec90d"
+      MultiAttachEnabled: false
+
+  EC2Volume3:
+    Type: "AWS::EC2::Volume"
+    Properties:
+      AvailabilityZone: !GetAtt EC2Instance.AvailabilityZone
+      Encrypted: false
+      Size: 8
+      VolumeType: "gp3"
+      SnapshotId: "snap-03cf69f68a0be6c3c"
+      MultiAttachEnabled: false
+
+  EC2VolumeAttachment:
+    Type: "AWS::EC2::VolumeAttachment"
+    Properties:
+      VolumeId: !Ref EC2Volume
+      InstanceId: !Ref EC2Instance2
+      Device: "/dev/xvda"
+
+  EC2VolumeAttachment2:
+    Type: "AWS::EC2::VolumeAttachment"
+    Properties:
+      VolumeId: !Ref EC2Volume2
+      InstanceId: !Ref EC2Instance3
+      Device: "/dev/xvda"
+
+  EC2VolumeAttachment3:
+    Type: "AWS::EC2::VolumeAttachment"
+    Properties:
+      VolumeId: !Ref EC2Volume3
+      InstanceId: !Ref EC2Instance
+      Device: "/dev/xvda"
+
+  EC2NetworkInterface:
+    Type: "AWS::EC2::NetworkInterface"
+    Properties:
+      Description: ""
+      PrivateIpAddress: !GetAtt EC2Instance2.PrivateIp
+      PrivateIpAddresses:
+        - PrivateIpAddress: !GetAtt EC2Instance2.PrivateIp
+          Primary: true
+      SubnetId: !Ref EC2Subnet2
+      SourceDestCheck: true
+      GroupSet:
+        - !Ref EC2SecurityGroup
+
+  EC2NetworkInterface2:
+    Type: "AWS::EC2::NetworkInterface"
+    Properties:
+      Description: !Sub "ELB app/${ElasticLoadBalancingV2LoadBalancer.LoadBalancerName}/6c5e2e74e54a84c3"
+      PrivateIpAddress: "10.0.2.59"
+      PrivateIpAddresses:
+        - PrivateIpAddress: "10.0.2.59"
+          Primary: true
+      SubnetId: !Ref EC2Subnet4
+      SourceDestCheck: true
+      GroupSet:
+        - !Sub "${ElasticLoadBalancingV2LoadBalancer.SecurityGroups}"
+
+  EC2NetworkInterface3:
+    Type: "AWS::EC2::NetworkInterface"
+    Properties:
+      Description: !Sub "ELB app/${ElasticLoadBalancingV2LoadBalancer.LoadBalancerName}/6c5e2e74e54a84c3"
+      PrivateIpAddress: "10.0.1.239"
+      PrivateIpAddresses:
+        - PrivateIpAddress: "10.0.1.239"
+          Primary: true
+      SubnetId: !Ref EC2Subnet
+      SourceDestCheck: true
+      GroupSet:
+        - !Sub "${ElasticLoadBalancingV2LoadBalancer.SecurityGroups}"
+
+  EC2NetworkInterface4:
+    Type: "AWS::EC2::NetworkInterface"
+    Properties:
+      Description: "RDSNetworkInterface"
+      PrivateIpAddress: "10.0.1.223"
+      PrivateIpAddresses:
+        - PrivateIpAddress: "10.0.1.223"
+          Primary: true
+      SubnetId: !Ref EC2Subnet
+      SourceDestCheck: true
+      GroupSet:
+        - !Ref EC2SecurityGroup7
+        - !Ref EC2SecurityGroup6
+
+  EC2NetworkInterface5:
+    Type: "AWS::EC2::NetworkInterface"
+    Properties:
+      Description: ""
+      PrivateIpAddress: !GetAtt EC2Instance.PrivateIp
+      PrivateIpAddresses:
+        - PrivateIpAddress: !GetAtt EC2Instance.PrivateIp
+          Primary: true
+      SubnetId: !Ref EC2Subnet3
+      SourceDestCheck: true
+      GroupSet:
+        - !Ref EC2SecurityGroup4
+        - !Ref EC2SecurityGroup
+
+  EC2NetworkInterface6:
+    Type: "AWS::EC2::NetworkInterface"
+    Properties:
+      Description: !Sub "Interface for NAT Gateway ${EC2NatGateway}"
+      PrivateIpAddress: "10.0.1.48"
+      PrivateIpAddresses:
+        - PrivateIpAddress: "10.0.1.48"
+          Primary: true
+      SubnetId: !Ref EC2Subnet
+      SourceDestCheck: false
+
+  EC2NetworkInterface7:
+    Type: "AWS::EC2::NetworkInterface"
+    Properties:
+      Description: ""
+      PrivateIpAddress: !GetAtt EC2Instance3.PrivateIp
+      PrivateIpAddresses:
+        - PrivateIpAddress: !GetAtt EC2Instance3.PrivateIp
+          Primary: true
+      SubnetId: !Ref EC2Subnet
+      SourceDestCheck: true
+      GroupSet:
+        - !Ref EC2SecurityGroup3
+
+  EC2NetworkInterfaceAttachment:
+    Type: "AWS::EC2::NetworkInterfaceAttachment"
+    Properties:
+      NetworkInterfaceId: "eni-090a6f6d17a027919"
+      DeviceIndex: 0
+      InstanceId: !Ref EC2Instance2
+      DeleteOnTermination: true
+
+  EC2NetworkInterfaceAttachment2:
+    Type: "AWS::EC2::NetworkInterfaceAttachment"
+    Properties:
+      NetworkInterfaceId: "eni-00926f406803f7f82"
+      DeviceIndex: 0
+      InstanceId: !Ref EC2Instance
+      DeleteOnTermination: true
+
+  EC2NetworkInterfaceAttachment3:
+    Type: "AWS::EC2::NetworkInterfaceAttachment"
+    Properties:
+      NetworkInterfaceId: "eni-0b3ba5d6310ba0b07"
+      DeviceIndex: 0
+      InstanceId: !Ref EC2Instance3
+      DeleteOnTermination: true
+
+  EC2KeyPair:
+    Type: "AWS::EC2::KeyPair"
+    Properties:
+      KeyName: "PrivateEC2s"
+      KeyType: "rsa"
+
+  EC2KeyPair2:
+    Type: "AWS::EC2::KeyPair"
+    Properties:
+      KeyName: "BastonHost"
+      KeyType: "rsa"
+
+  S3Bucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      BucketName: !Sub "aws-cloudtrail-logs-${AWS::AccountId}-ed9ac0d4"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: "AES256"
+            BucketKeyEnabled: false
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: "BucketOwnerEnforced"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  S3BucketPolicy:
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+      Bucket: !Ref S3Bucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: "AWSCloudTrailAclCheck20150319"
+            Effect: "Allow"
+            Principal:
+              Service: "cloudtrail.amazonaws.com"
+            Action: "s3:GetBucketAcl"
+            Resource: !Sub "arn:aws:s3:::${S3Bucket}"
+            Condition:
+              StringEquals:
+                "AWS:SourceArn": !GetAtt CloudTrailTrail.Arn
+          - Sid: "AWSCloudTrailWrite20150319"
+            Effect: "Allow"
+            Principal:
+              Service: "cloudtrail.amazonaws.com"
+            Action: "s3:PutObject"
+            Resource: !Sub "arn:aws:s3:::${S3Bucket}/AWSLogs/${AWS::AccountId}/*"
+            Condition:
+              StringEquals:
+                "AWS:SourceArn": !GetAtt CloudTrailTrail.Arn
+                "s3:x-amz-acl": "bucket-owner-full-control"
+
+  RDSDBInstance:
+    Type: "AWS::RDS::DBInstance"
+    Properties:
+      DBInstanceIdentifier: "main-db"
+      AllocatedStorage: 20
+      DBInstanceClass: "db.t2.micro"
+      Engine: "mysql"
+      MasterUsername: "admin"
+      MasterUserPassword: "REPLACEME"
+      PreferredBackupWindow: "08:00-08:30"
+      BackupRetentionPeriod: 0
+      AvailabilityZone: !GetAtt EC2Instance3.AvailabilityZone
+      PreferredMaintenanceWindow: "sun:09:49-sun:10:19"
+      MultiAZ: false
+      EngineVersion: "8.0.33"
+      AutoMinorVersionUpgrade: true
+      LicenseModel: "general-public-license"
+      PubliclyAccessible: false
+      StorageType: "gp2"
+      Port: 3306
+      StorageEncrypted: false
+      CopyTagsToSnapshot: true
+      MonitoringInterval: 0
+      EnableIAMDatabaseAuthentication: false
+      EnablePerformanceInsights: false
+      DeletionProtection: false
+      DBSubnetGroupName: !Sub "default-${EC2VPC}"
+      VPCSecurityGroups:
+        - "sg-0af65df5eb2455231"
+        - "sg-0cf80e811fa92f645"
+      MaxAllocatedStorage: 1000
+      DBParameterGroupName: "default.mysql8.0"
+      OptionGroupName: "default:mysql-8-0"
+      CACertificateIdentifier: "rds-ca-2019"
+
+  RDSDBSubnetGroup:
+    Type: "AWS::RDS::DBSubnetGroup"
+    Properties:
+      DBSubnetGroupDescription: "Created from the RDS Management Console"
+      DBSubnetGroupName: !Sub "default-${EC2VPC}"
+      SubnetIds:
+        - !Ref EC2Subnet
+        - !Ref EC2Subnet2
+        - !Ref EC2Subnet3
+        - !Ref EC2Subnet4
+
+  LogsLogGroup:
+    Type: "AWS::Logs::LogGroup"
+    Properties:
+      LogGroupName: "/aws/lambda/staging-lambda"
+
+  LogsLogStream:
+    Type: "AWS::Logs::LogStream"
+    Properties:
+      LogGroupName: "/aws/lambda/staging-lambda"
+      LogStreamName: "2023/10/18/[$LATEST]166bb75db705426d9f0f4923fcc34b71"
+
+  LogsLogStream2:
+    Type: "AWS::Logs::LogStream"
+    Properties:
+      LogGroupName: "/aws/lambda/staging-lambda"
+      LogStreamName: "2023/10/18/[$LATEST]2f0ab3301d344fbbb3a46be8712ec394"
+
+  LogsLogStream3:
+    Type: "AWS::Logs::LogStream"
+    Properties:
+      LogGroupName: "/aws/lambda/staging-lambda"
+      LogStreamName: "2023/10/18/[$LATEST]3265d33841be47f19c7d2fecc5333e4d"
+
+  LogsLogStream4:
+    Type: "AWS::Logs::LogStream"
+    Properties:
+      LogGroupName: "/aws/lambda/staging-lambda"
+      LogStreamName: "2023/10/18/[$LATEST]3855b52022e246f7b5c199fbdc84032e"
+
+  LogsLogStream5:
+    Type: "AWS::Logs::LogStream"
+    Properties:
+      LogGroupName: "/aws/lambda/staging-lambda"
+      LogStreamName: "2023/10/18/[$LATEST]6b0b0ced2e634245989dde81d62d304b"
+
+  LogsLogStream6:
+    Type: "AWS::Logs::LogStream"
+    Properties:
+      LogGroupName: "/aws/lambda/staging-lambda"
+      LogStreamName: "2023/10/18/[$LATEST]b5fffcd3463d4ef980755597e4d6f249"
+
+  LogsLogStream7:
+    Type: "AWS::Logs::LogStream"
+    Properties:
+      LogGroupName: "/aws/lambda/staging-lambda"
+      LogStreamName: "2023/10/18/[$LATEST]b6a236c18ff64272b361a7a8cf38989e"
+
+  LogsLogStream8:
+    Type: "AWS::Logs::LogStream"
+    Properties:
+      LogGroupName: "/aws/lambda/staging-lambda"
+      LogStreamName: "2023/10/18/[$LATEST]eddeaf53c7bb412f9f8ab52f6b655eb5"
+
+  LogsLogStream9:
+    Type: "AWS::Logs::LogStream"
+    Properties:
+      LogGroupName: "/aws/lambda/staging-lambda"
+      LogStreamName: "2023/10/18/[$LATEST]ef34b55daf944ad5825be6388a76ace7"
+
+  LogsLogStream10:
+    Type: "AWS::Logs::LogStream"
+    Properties:
+      LogGroupName: "/aws/lambda/staging-lambda"
+      LogStreamName: "2023/10/19/[$LATEST]63d992bdbd574146bcff1ae8999b1beb"
+
+  CloudTrailTrail:
+    Type: "AWS::CloudTrail::Trail"
+    Properties:
+      TrailName: "management-events"
+      S3BucketName: !Ref S3Bucket
+      IncludeGlobalServiceEvents: true
+      IsMultiRegionTrail: true
+      EnableLogFileValidation: false
+      IsLogging: true
+
+  IAMServiceLinkedRole:
+    Type: "AWS::IAM::ServiceLinkedRole"
+    Properties:
+      AWSServiceName: "elasticloadbalancing.amazonaws.com"
+      Description: "Allows ELB to call AWS services on your behalf."
+
+  IAMServiceLinkedRole2:
+    Type: "AWS::IAM::ServiceLinkedRole"
+    Properties:
+      AWSServiceName: "rds.amazonaws.com"
+      Description: "Allows Amazon RDS to manage AWS resources on your behalf"
+
+  IAMManagedPolicy:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: "AWSLambdaVPCAccessExecutionRole-6a29598f-ed73-4734-9c8a-d3903ef14c33"
+      Path: "/service-role/"
+      PolicyDocument: |
+        {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Action": [
+                        "ec2:CreateNetworkInterface",
+                        "ec2:DeleteNetworkInterface",
+                        "ec2:DescribeNetworkInterfaces"
+                    ],
+                    "Resource": "*"
+                }
+            ]
+        }
+
+  IAMManagedPolicy2:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: "AWSLambdaBasicExecutionRole-c8d4d27b-c64f-4425-9626-82e51770cff3"
+      Path: "/service-role/"
+      PolicyDocument: !Sub |
+        {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Action": "logs:CreateLogGroup",
+                    "Resource": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+                },
+                {
+                    "Effect": "Allow",
+                    "Action": [
+                        "logs:CreateLogStream",
+                        "logs:PutLogEvents"
+                    ],
+                    "Resource": [
+                        "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/getTokens:*"
+                    ]
+                }
+            ]
+        }
+
+  IAMManagedPolicy3:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: "AWSLambdaBasicExecutionRole-d32918ab-463a-4f87-9d36-348cf8de1c56"
+      Path: "/service-role/"
+      PolicyDocument: !Sub |
+        {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Action": "logs:CreateLogGroup",
+                    "Resource": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+                },
+                {
+                    "Effect": "Allow",
+                    "Action": [
+                        "logs:CreateLogStream",
+                        "logs:PutLogEvents"
+                    ],
+                    "Resource": [
+                        "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/staging-lambda:*"
+                    ]
+                }
+            ]
+        }
+
+  IAMManagedPolicy4:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: "AWSLambdaBasicExecutionRole-264b71d8-76e9-4cb2-9302-a25dffd8e284"
+      Path: "/service-role/"
+      PolicyDocument: !Sub |
+        {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Action": "logs:CreateLogGroup",
+                    "Resource": "arn:aws:logs:us-east-1:${AWS::AccountId}:*"
+                },
+                {
+                    "Effect": "Allow",
+                    "Action": [
+                        "logs:CreateLogStream",
+                        "logs:PutLogEvents"
+                    ],
+                    "Resource": [
+                        "arn:aws:logs:us-east-1:${AWS::AccountId}:log-group:/aws/lambda/verifyCardInfos:*"
+                    ]
+                }
+            ]
+        }
+
+  KMSKey:
+    Type: "AWS::KMS::Key"
+    Properties:
+      Enabled: true
+      Description: ""
+      KeyUsage: "ENCRYPT_DECRYPT"
+      KeyPolicy: !Sub |
+        {
+          "Version" : "2012-10-17",
+          "Id" : "key-consolepolicy-3",
+          "Statement" : [ {
+            "Sid" : "Enable IAM User Permissions",
+            "Effect" : "Allow",
+            "Principal" : {
+              "AWS" : "arn:aws:iam::${AWS::AccountId}:root"
+            },
+            "Action" : "kms:*",
+            "Resource" : "*"
+          }, {
+            "Sid" : "Allow access for Key Administrators",
+            "Effect" : "Allow",
+            "Principal" : {
+              "AWS" : "arn:aws:iam::${AWS::AccountId}:user/Yassine_CloudLink"
+            },
+            "Action" : [ "kms:Create*", "kms:Describe*", "kms:Enable*", "kms:List*", "kms:Put*", "kms:Update*", "kms:Revoke*", "kms:Disable*", "kms:Get*", "kms:Delete*", "kms:TagResource", "kms:UntagResource", "kms:ScheduleKeyDeletion", "kms:CancelKeyDeletion" ],
+            "Resource" : "*"
+          }, {
+            "Sid" : "Allow use of the key",
+            "Effect" : "Allow",
+            "Principal" : {
+              "AWS" : "arn:aws:iam::${AWS::AccountId}:user/Yassine_CloudLink"
+            },
+            "Action" : [ "kms:Encrypt", "kms:Decrypt", "kms:ReEncrypt*", "kms:GenerateDataKey*", "kms:DescribeKey" ],
+            "Resource" : "*"
+          }, {
+            "Sid" : "Allow attachment of persistent resources",
+            "Effect" : "Allow",
+            "Principal" : {
+              "AWS" : "arn:aws:iam::${AWS::AccountId}:user/Yassine_CloudLink"
+            },
+            "Action" : [ "kms:CreateGrant", "kms:ListGrants", "kms:RevokeGrant" ],
+            "Resource" : "*",
+            "Condition" : {
+              "Bool" : {
+                "kms:GrantIsForAWSResource" : "true"
+              }
+            }
+          } ]
+        }
+      KeySpec: "SYMMETRIC_DEFAULT"
+      MultiRegion: false
